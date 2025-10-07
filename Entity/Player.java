@@ -2,29 +2,28 @@ package Entity;
 
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
-import javafx.scene.paint.Color;
+import java.util.ArrayList;
+
 import main.GamePanel;
 import main.KeyHandler;
+import objects.OBJ_Key;
+import objects.OBJ_Shield_Wood;
+import objects.OBJ_Sword_Normal;
+
 import java.awt.Graphics2D;
-import java.io.IOException;
-
-import main.UtilityTool;
-
-import javax.imageio.ImageIO;
-
-import java.awt.Graphics;
 
 public class Player extends Entity{
     KeyHandler keyH;
-    GamePanel gp;    
 
     public final int screenX;
     public final int screenY;
-    public int hasKey = 0;
+    int standCounter = 0;
+    public ArrayList<Entity> inventory = new ArrayList<>();
+    public final int maxInventorySize = 20;
 
     public Player(GamePanel gp, KeyHandler keyH){
 
-        this.gp = gp;
+        super(gp);
         this.keyH = keyH;
 
         screenX = gp.screenWidth/2 - (gp.tileSize/2);
@@ -40,42 +39,70 @@ public class Player extends Entity{
 
         setDefaultValues();
         getPlayerImage();
+        setItems();
     }
+
     public void setDefaultValues(){
 
         worldX = gp.tileSize * 23;
         worldY = gp.tileSize * 21;
         speed = 4;
         direction = "down";
+
+        //PLAYER STATUS 
+        level = 1;
+        maxLife = 6;
+        life = maxLife; 
+        strength = 1; //higher the strengths, higher the damage
+        dexterity = 1; //higher the dexterity, lesser damage receive
+        exp = 0;
+        nextLevelExp = 5;
+        coin = 0;
+        currentWeapon = new OBJ_Sword_Normal(gp); 
+        currentShield = new OBJ_Shield_Wood(gp);
+        attack = getAttack(); //total damage depends on strength and weapon
+        defense = getDefense(); //total defense depends on dexterity and shield
+    }
+
+    public void setDefaultPosition(){
+
+        worldX = gp.tileSize * 23;
+        worldY = gp.tileSize * 21;
+        direction = "down";
+    }
+
+    public void restoreLifeandMana(){
+
+        life = maxLife; 
+    }
+
+    public void setItems(){
+
+        inventory.add(currentWeapon);
+        inventory.add(currentShield);
+        inventory.add(new OBJ_Key(gp));
+    }
+
+    public int getAttack(){
+        return attack = strength * currentWeapon.attackValue;
+    }
+
+    public int getDefense(){
+        return defense = dexterity * currentShield.defenseValue;
     }
 
     public void getPlayerImage(){
 
-        up1 = setup("boy_up_1");
-        up2 = setup("boy_up_2");
-        down1 = setup("boy_down_1");
-        down2 = setup("boy_down_2");
-        left1 = setup("boy_left_1");
-        left2 = setup("boy_left_2");
-        right1 = setup("boy_right_1");
-        right2 = setup("boy_right_2");
+        up1 = setup("/walk_sprite/ziq_up_1");
+        up2 = setup("/walk_sprite/ziq_up_2");
+        down1 = setup("/walk_sprite/ziq_down_1");
+        down2 = setup("/walk_sprite/ziq_down_2");
+        left1 = setup("/walk_sprite/ziq_left_1");
+        left2 = setup("/walk_sprite/ziq_left_2");
+        right1 = setup("/walk_sprite/ziq_right_1");
+        right2 = setup("/walk_sprite/ziq_right_2");
     }
 
-    public BufferedImage setup(String imageName){
-
-        UtilityTool uTool = new UtilityTool();
-        BufferedImage image = null;
-
-        try{
-
-            image = ImageIO.read(getClass() .getResourceAsStream("/player/" + imageName + ".png"));
-            image = uTool.scaleImage(image, gp.tileSize, gp.tileSize);
-        }catch(IOException e){
-            e.printStackTrace();
-        }
-
-        return image;
-    }
 
     public void update(){
 
@@ -99,6 +126,16 @@ public class Player extends Entity{
             int objIndex = gp.cChecker.checkObject(this, true);
             pickUpObject(objIndex);
 
+            //CHECK NPC COLLISION
+            int npcIndex = gp.cChecker.checkEntity(this, gp.npc);
+            interactNPC(npcIndex);
+
+            // CHECK EVENT
+            gp.eHandler.checkEvent();
+
+            gp.keyH.enterPressed = false;
+
+
             //IF COLLISION IS FALSE, PLAYER CAN MOVE
             if(collisionOn == false){
 
@@ -111,7 +148,7 @@ public class Player extends Entity{
             }
 
             spriteCounter++;
-            if(spriteCounter > 10){
+            if(spriteCounter > 12){
                 if(spriteNum == 1){
                     spriteNum = 2;
                 }else if(spriteNum == 2){
@@ -120,51 +157,30 @@ public class Player extends Entity{
             spriteCounter = 0;
             }
         }
+
+        if(life <= 0){
+            gp.gameState = gp.gameOverState;
+            gp.playSE(6);
+        }
     }
 
     public void pickUpObject(int i){
         if(i != 999){
-
-            String objectName = gp.obj[i].name;
-
-            switch(objectName){
-                case "Key":
-                    gp.playSE(1);
-                    hasKey++;
-                    gp.ui.showMessage("You got a key!");
-                    gp.obj[i] = null;
-                    break;
-                case "Door":
-                    gp.playSE(3);
-                    if(hasKey > 0){
-                        gp.obj[i] = null;
-                        hasKey--;
-                        gp.ui.showMessage("You opened the door!");
-                    }else{
-                        gp.ui.showMessage("Key is needed!");
-                    }
-                    System.out.println("Key; " + hasKey);
-                    break;
-                case "Boots":
-                    gp.playSE(2);
-                    speed += 2;
-                    gp.obj[i] = null;
-                    gp.ui.showMessage("Increases speed!!!");
-                    break;
-                case "Chest":
-                    gp.ui.gameFinished = true;
-                    gp.stopMusic();
-                    gp.playSE(4);
-                    break;
-            }
         }
 
     }
 
-    public void draw(Graphics2D g2){
+    public void interactNPC(int i){
+        if(i != 999){
 
-        // g2.setColor(Color.white);
-        // g2.fillRect(x, y, gp.tileSize, gp.tileSize);
+            if(gp.keyH.enterPressed == true){
+                gp.gameState = gp.dialogueState;
+                gp.npc[i].speak();
+            }
+        }
+    }
+
+    public void draw(Graphics2D g2){
 
         BufferedImage image = null;
  
