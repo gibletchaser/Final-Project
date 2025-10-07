@@ -20,21 +20,33 @@ public class tileManager {
 
     public tileManager(GamePanel gp){
         this.gp = gp;
-        tile = new Tile[10];
+        tile = new Tile[50];
         mapTileNum = new int[gp.maxWorldCol][gp.maxWorldRow];
 
         getTileImage();
-        loadMap("/maps/world01.txt");
+        loadMap("/maps/Aje_Gampang.txt");
     }
 
     public void getTileImage(){
 
-        setup(0, "grass", false);
+        setup(0, "office_wall", false);
         setup(1, "wall", true);
         setup(2, "water", true);
-        setup(3, "earth", false);
-        setup(4, "tree", true);
-        setup(5, "sand", false);
+        setup(3, "woodTile", false);
+        setup(4, "wall", true);
+        setup(5, "carpet1", false);
+        setup(6, "carpetMiddle", false);
+        setup(7, "carpetEndUp", false);
+        setup(8, "carpetEndDown", false);
+        setup(9, "carpetEndLeft", false);
+        setup(10, "carpetEndRight", false);
+        setup(11, "carpetUp", false);
+        setup(12, "carpetTurnLeft", false);
+        setup(13, "carpetTurnRight", false);
+        setup(14, "carpetUpT", false);
+        setup(15, "carpetDownT", false);
+        setup(16, "carpetLeftT", false);
+        setup(17, "carpetRightT", false);
     }
 
     public void setup(int index, String imageName, boolean collision){
@@ -43,7 +55,7 @@ public class tileManager {
 
         try{
             tile[index] = new Tile();
-            tile[index].image = ImageIO.read(getClass().getResourceAsStream("/tiles/" + imageName +".png"));
+            tile[index].image = ImageIO.read(getClass().getResourceAsStream("/Old version/" + imageName +".png"));
             tile[index].image = uTool.scaleImage(tile[index].image, gp.tileSize, gp.tileSize);
             tile[index].collision = collision;
 
